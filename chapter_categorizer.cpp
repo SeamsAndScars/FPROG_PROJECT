@@ -1,17 +1,14 @@
 #include "chapter_categorizer.h"
-//using namespace std;
+using namespace std;
 
-
-auto ReadFile = [](string filename) -> optional<vector<std::string>> {
-    ifstream myfile;
+auto ReadFile = [](std::string filename) -> std::optional<std::vector<std::string>> {
+    std::ifstream myfile(filename);
     std::vector<std::string> fileData;
     std::string line;
 
-    myfile.open(filename);
-
-    if(myfile == NULL)
+    if(!myfile.is_open())
     {
-        return NULL;
+        return std::nullopt;
     }
 
     while(std::getline(myfile, line))
@@ -20,17 +17,34 @@ auto ReadFile = [](string filename) -> optional<vector<std::string>> {
     }
 
     myfile.close();
-
     return fileData;
 };
 
 
+auto tokenizeString = [](string inputString){
+    stringstream sstream(inputString);
+    
+    /* In PROGRESS
+
+    for_each(char c){
+
+    }
+    */
+};
+
 int main()
 {
-    std::vector<string> data = ReadFile("war_terms.txt");
-
-    for(const std::string& line : fileData)
-    {
-        std::cout << line << std::endl;
+    auto result = ReadFile("war_terms.txt");
+    
+    if (result.has_value()) {
+        // File read successfully, process the lines in 'result.value()'
+        const std::vector<std::string>& lines = result.value();
+        for (const auto& line : lines) {
+            std::cout << line << std::endl;
+        }
+    } else {
+        // Handle the error case
+        std::cerr << "Failed to read the file." << std::endl;
     }
+    
 }

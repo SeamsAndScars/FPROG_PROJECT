@@ -1,0 +1,20 @@
+{
+  "configurations": [
+    {
+      "name": "linux-gcc-x64",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/vcpkg/packages/range-v3_x64-linux/include",
+        "\\\\wsl.localhost\\Ubuntu\\home\\ans\\vcpkg\\packages\\range-v3_x64-linux\\include"
+      ],
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "${default}",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64",
+      "compilerArgs": [
+        ""
+      ]
+    }
+  ],
+  "version": 4
+}

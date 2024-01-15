@@ -2,6 +2,10 @@
 #include <iostream>
 #include <stdio.h>
 #include <optional>
+#include <fstream>
+#include <sstream>
+#include <iterator>
+#include <algorithm>
 
 #define peace_terms "peace_terms.txt"
 #define war_terms "war_terms.txt"
