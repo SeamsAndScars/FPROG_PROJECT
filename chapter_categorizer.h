@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iterator>
 #include <algorithm>
+#include <set>
 
 #define peace_terms "peace_terms.txt"
 #define war_terms "war_terms.txt"
