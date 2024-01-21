@@ -9,6 +9,7 @@
 #include <set>
 #include <map>
 #include <numeric>
+#include <regex>
 
 #define peace_terms "peace_terms.txt"
 #define war_terms "war_terms.txt"
