@@ -63,6 +63,31 @@ auto FilterWords(const vector<string> &mainText, const vector<string> &filterLis
     return filteredWords;
 }
 
+auto countWordOccurrences = [] (const std::vector<std::string>& wordList) -> map<string, int> {
+    // Map to store word occurrences
+    std::map<std::string, int> wordCount;
+
+    // Map function: Convert each word to a pair (word, 1)
+    auto mapFunction = [](const std::string& word) {
+        return std::make_pair(word, 1);
+    };
+
+    // Reduce function: Sum up the values for each key (word)
+    auto reduceFunction = [](int accumulator, const std::pair<std::string, int>& wordPair) {
+        return accumulator + wordPair.second;
+    };
+
+    // Map phase: Apply map function to each element in the wordList
+    std::vector<std::pair<std::string, int>> mappedResult;
+    std::transform(wordList.begin(), wordList.end(), std::back_inserter(mappedResult), mapFunction);
+
+    // Reduce phase: Use accumulate with reduce function to count occurrences
+    for (const auto& wordPair : mappedResult) {
+        wordCount[wordPair.first] += wordPair.second;
+    }
+
+    return wordCount;
+};
 
 int main() {
     vector<string> wordList = ReadFile(book);
@@ -74,10 +99,13 @@ int main() {
     vector<string> cleansedWords = CleanseWords(tokenizedWords);
 
     vector<string> filteredWords = FilterWords(cleansedWords, peaceList, warList);
+    
+    map<string, int> wordOccurrences = countWordOccurrences(filteredWords);
 
-    for_each(filteredWords.begin(), filteredWords.end(), [](const string& word) {
-        cout << word << endl;
-    });
+    // Print the results of wordOccurences function
+    for (const auto& entry : wordOccurrences) {
+        std::cout << entry.first << ": " << entry.second << " occurrences\n";
+    }
 
     return 0;
 

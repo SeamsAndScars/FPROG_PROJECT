@@ -7,6 +7,8 @@
 #include <iterator>
 #include <algorithm>
 #include <set>
+#include <map>
+#include <numeric>
 
 #define peace_terms "peace_terms.txt"
 #define war_terms "war_terms.txt"
