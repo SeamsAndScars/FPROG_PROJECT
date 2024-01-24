@@ -3,6 +3,11 @@
 
 using namespace std;
 
+struct Chapter {
+    int number;
+    std::vector<std::string> content;
+};
+
 auto ReadFile = [](string filename) -> vector<string> {
     ifstream myfile(filename);
     vector<string> fileData;
@@ -69,26 +74,21 @@ auto FilterWords = [](const vector<string> &mainText, const vector<string> &filt
     return filteredWords;
 };
 
-auto CountWordOccurrences = [](const std::vector<std::string>& wordList) -> map<string, int> {
-    // Map to store word occurrences
-    std::map<std::string, int> wordCount;
+auto CountWordOccurrences = [](const vector<string> &wordList) -> map<string, int> {
+    map<string, int> wordCount;
 
-    // Map function: Convert each word to a pair (word, 1)
-    auto MapFunction = [](const std::string& word) {
-        return std::make_pair(word, 1);
+    auto MapFunction = [](const string &word) {
+        return make_pair(word, 1);
     };
 
-    // Reduce function: Sum up the values for each key (word)
-    auto ReduceFunction = [](int accumulator, const std::pair<std::string, int>& wordPair) {
+    auto ReduceFunction = [](int accumulator, const pair<string, int> &wordPair) {
         return accumulator + wordPair.second;
     };
 
-    // Map phase: Apply map function to each element in the wordList
-    std::vector<std::pair<std::string, int>> mappedResult;
-    std::transform(wordList.begin(), wordList.end(), std::back_inserter(mappedResult), MapFunction);
+    vector<pair<string, int>> mappedResult(wordList.size());
+    transform(wordList.begin(), wordList.end(), mappedResult.begin(), MapFunction);
 
-    // Reduce phase: Use accumulate with reduce function to count occurrences
-    for (const auto& wordPair : mappedResult) {
+    for (const auto &wordPair : mappedResult) {
         wordCount[wordPair.first] += wordPair.second;
     }
 
@@ -96,38 +96,76 @@ auto CountWordOccurrences = [](const std::vector<std::string>& wordList) -> map<
 };
 
 // Function to calculate the density of terms
-auto CalculateTermDensity = [](const vector<string>& wordList, const map<string, int>& wordOccurrences) -> map<string, double> {
-    map<string, double> termDensity;
+auto CalculateTermDensity = [](const vector<string> &chapterContent, const map<string, int> &wordOccurrences) -> map<string, double> {
+    size_t totalWordCount = chapterContent.size();
 
-    // Function to calculate the average distance for a specific word
-    auto calculateAverageDistance = [&](const string& word) -> double {
-        // Find positions of the word in the wordList
-        vector<int> positions;
-        for (size_t i = 0; i < wordList.size(); ++i) {
-            if (wordList[i] == word) {
-                positions.push_back(i);
-            }
-        }
+    auto calculateDensity = [&](const pair<string, int> &wordOccurrence) -> pair<string, double> {
+        const string &word = wordOccurrence.first;
+        int frequency = wordOccurrence.second;
 
-        // Calculate relative distances and average
-        double averageDistance = 0.0;
-        if (positions.size() > 1) {
-            adjacent_difference(positions.begin(), positions.end(), positions.begin() + 1, minus<>());
-            averageDistance = accumulate(positions.begin() + 1, positions.end(), 0.0) / (positions.size() - 1);
-        }
-
-        return averageDistance;
+        double density = (totalWordCount > 0) ? (static_cast<double>(frequency) / totalWordCount * 100.0) : 0.0;
+        return make_pair(word, density);
     };
 
-    // Use transform to calculate average distances for each word
-    transform(wordOccurrences.begin(), wordOccurrences.end(), inserter(termDensity, termDensity.begin()), [&](const auto& wordOccurrence) {
-        const string& word = wordOccurrence.first;
-        return make_pair(word, calculateAverageDistance(word));
-    });
+    map<string, double> termDensity;
+    transform(wordOccurrences.begin(), wordOccurrences.end(), inserter(termDensity, termDensity.begin()), calculateDensity);
 
     return termDensity;
 };
 
+// Function to split the book into chapters
+auto SplitIntoChapters = [](const vector<string> &bookContent) -> vector<Chapter> {
+    vector<Chapter> chapters;
+
+    Chapter currentChapter;
+    bool inChapter = false;
+    int cumulativeChapterCount = 0;
+
+    for (const auto &line : bookContent) {
+        if (regex_search(line, regex("^CHAPTER \\d+"))) {
+            if (inChapter) {
+                chapters.push_back(currentChapter);
+            }
+
+            cumulativeChapterCount++;
+            currentChapter = {cumulativeChapterCount, {}};
+            inChapter = true;
+        } else {
+            if (inChapter) {
+                currentChapter.content.push_back(line);
+            }
+        }
+    }
+
+    if (inChapter && !currentChapter.content.empty()) {
+        chapters.push_back(currentChapter);
+    }
+
+    return chapters;
+};
+
+// Function to process a single chapter
+string ProcessChapter(const Chapter& chapter, const vector<string>& peaceList, const vector<string>& warList) {
+    vector<string> tokenizedWords = TokenizeString(chapter.content);
+    vector<string> cleansedWords = CleanseWords(tokenizedWords);
+    vector<string> filteredWords = FilterWords(cleansedWords, peaceList, warList);
+
+    map<string, int> wordOccurrences = CountWordOccurrences(filteredWords);
+    map<string, double> termDensity = CalculateTermDensity(filteredWords, wordOccurrences);
+
+    size_t totalChapterWordCount = chapter.content.size();
+    double warDensity = (totalChapterWordCount > 0) ? termDensity["war"] : 0.0;
+    double peaceDensity = (totalChapterWordCount > 0) ? termDensity["peace"] : 0.0;
+
+    return (warDensity > peaceDensity) ? "War-related" : "Peace-related";
+}
+
+// Function to print chapter categories
+void PrintChapterCategories(const vector<Chapter>& chapters, const vector<string>& chapterCategories) {
+    for (size_t i = 0; i < chapters.size(); ++i) {
+        cout << "Chapter " << chapters[i].number << ": " << chapterCategories[i] << endl;
+    }
+}
 
 
 int main() {
@@ -135,23 +173,13 @@ int main() {
     vector<string> peaceList = ReadFile(peace_terms);
     vector<string> warList = ReadFile(war_terms);
 
-    vector<string> tokenizedWords = !wordList.empty() ? TokenizeString(wordList) : vector<string>();
+    vector<Chapter> chapters = SplitIntoChapters(wordList);
 
-    vector<string> cleansedWords = CleanseWords(tokenizedWords);
+    vector<string> chapterCategories(chapters.size());
+    transform(chapters.begin(), chapters.end(), chapterCategories.begin(),
+              [&](const Chapter& chapter) { return ProcessChapter(chapter, peaceList, warList); });
 
-    vector<string> filteredWords = FilterWords(cleansedWords, peaceList, warList);
-    
-    map<string, int> wordOccurrences = CountWordOccurrences(filteredWords);
-
-    map<string, double> termDensity = CalculateTermDensity(filteredWords, wordOccurrences);
-
-    // Print the results of wordOccurences function
-    for (const auto& entry : termDensity) {
-        std::cout << entry.first << ": " << entry.second << " average distance\n";
-    }
-
-   
+    PrintChapterCategories(chapters, chapterCategories);
 
     return 0;
-
 }
