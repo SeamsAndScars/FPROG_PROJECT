@@ -1,22 +1,16 @@
-
 #include "chapter_categorizer.h"
 
 using namespace std;
 
 struct Chapter {
     int number;
-    std::vector<std::string> content;
+    vector<string> content;
 };
 
 auto ReadFile = [](string filename) -> vector<string> {
     ifstream myfile(filename);
     vector<string> fileData;
     string line;
-
-    /*if(!myfile.is_open())
-    {
-        return nullptr;
-    }*/
 
     while (getline(myfile, line)) {
         fileData.push_back(line);
@@ -27,20 +21,43 @@ auto ReadFile = [](string filename) -> vector<string> {
 };
 
 
-auto TokenizeString = [](const vector<string> &inputStrings) -> vector<string> {
-    vector<string> tokenizedWords;
+auto tokenize = [](const string& input) -> vector<string> {
+    vector<string> tokens;
+    
+    auto processToken = [&](const vector<char>& tokenChars) {
+        if (!tokenChars.empty()) {
+            tokens.emplace_back(tokenChars.data(), tokenChars.size());
+        }
+    };
 
-    for (const auto &line: inputStrings) {
-        regex wordRegex("\\b\\w+\\b");
-        sregex_iterator iter(line.begin(), line.end(), wordRegex);
-        sregex_iterator end;
+    vector<char> currentToken;
 
-        while (iter != end) {
-            tokenizedWords.push_back(iter->str());
-            ++iter;
+    for (char ch : input) {
+        if (isalnum(ch)) {
+            // Add alphanumeric character to the current token
+            currentToken.push_back(ch);
+        } else {
+            // Non-alphanumeric character found, process the current token if not empty
+            processToken(currentToken);
+            currentToken.clear();
         }
     }
 
+    // Process the last token if not empty
+    processToken(currentToken);
+
+    return tokens;
+};
+
+auto TokenizeString = [](const std::vector<std::string>& inputStrings) -> std::vector<std::string> {
+    std::vector<std::string> tokenizedWords;
+
+    for (const auto& str : inputStrings) {
+        std::vector<std::string> tokens = tokenize(str);
+        for (const auto& token : tokens) {
+            tokenizedWords.push_back(token);
+        }
+    }
     return tokenizedWords;
 };
 
@@ -74,16 +91,16 @@ auto FilterWords = [](const vector<string> &mainText, const vector<string> &filt
     return filteredWords;
 };
 
-auto CountWordOccurrences = [](const vector<string> &wordList) -> map<string, int> {
-    map<string, int> wordCount;
-
-    auto MapFunction = [](const string &word) {
+auto MapFunction = [](const string &word) {
         return make_pair(word, 1);
     };
 
-    auto ReduceFunction = [](int accumulator, const pair<string, int> &wordPair) {
+auto ReduceFunction = [](int accumulator, const pair<string, int> &wordPair) {
         return accumulator + wordPair.second;
     };
+
+auto CountWordOccurrences = [](const vector<string> &wordList) -> map<string, int> {
+    map<string, int> wordCount;
 
     vector<pair<string, int>> mappedResult(wordList.size());
     transform(wordList.begin(), wordList.end(), mappedResult.begin(), MapFunction);
@@ -113,33 +130,39 @@ auto CalculateTermDensity = [](const vector<string> &chapterContent, const map<s
     return termDensity;
 };
 
-// Function to split the book into chapters
-auto SplitIntoChapters = [](const vector<string> &bookContent) -> vector<Chapter> {
-    vector<Chapter> chapters;
+auto isChapterHeader = [](const std::string& line) {
+    return line.find("CHAPTER ") == 0;
+};
 
-    Chapter currentChapter;
-    bool inChapter = false;
+auto createChapter = [](int number) {
+    return Chapter{number, {}};
+};
+
+auto appendLineToChapter = [](Chapter chapter, const std::string& line) {
+    chapter.content.push_back(line);
+    return chapter;
+};
+
+auto SplitIntoChapters = [](const std::vector<std::string>& bookContent) -> std::vector<Chapter> {
     int cumulativeChapterCount = 0;
 
-    for (const auto &line : bookContent) {
-        if (regex_search(line, regex("^CHAPTER \\d+"))) {
-            if (inChapter) {
-                chapters.push_back(currentChapter);
-            }
-
+    auto processLine = [&](std::vector<Chapter>& chapters, const std::string& line) {
+        if (isChapterHeader(line)) {
             cumulativeChapterCount++;
-            currentChapter = {cumulativeChapterCount, {}};
-            inChapter = true;
-        } else {
-            if (inChapter) {
-                currentChapter.content.push_back(line);
-            }
+            chapters.push_back(createChapter(cumulativeChapterCount));
+        } else if (!chapters.empty()) {
+            chapters.back() = appendLineToChapter(chapters.back(), line);
         }
-    }
+    };
 
-    if (inChapter && !currentChapter.content.empty()) {
-        chapters.push_back(currentChapter);
-    }
+    std::vector<Chapter> chapters;
+    std::for_each(bookContent.begin(), bookContent.end(), [&](const std::string& line) {
+        processLine(chapters, line);
+    });
+
+    chapters.erase(std::remove_if(chapters.begin(), chapters.end(), [](const Chapter& chapter) {
+        return chapter.content.empty();
+    }), chapters.end());
 
     return chapters;
 };
@@ -172,6 +195,28 @@ int main() {
     vector<string> wordList = ReadFile(book);
     vector<string> peaceList = ReadFile(peace_terms);
     vector<string> warList = ReadFile(war_terms);
+    
+    //PRINT STUFF
+    /*
+    vector<string> tokenizedWords = TokenizeStringNoRegex(wordList);
+    std::string fileName = "Testfile3.txt";
+
+    std::ofstream outputFile(fileName);
+    if (outputFile.is_open()) {
+        // Iterate through the vector and write each string to the file
+        for (const std::string& str : tokenizedWords) {
+            outputFile << str << std::endl;
+        }
+
+        // Close the file stream
+        outputFile.close();
+
+        std::cout << "Vector of strings has been written to " << fileName << std::endl;
+    } else {
+        std::cerr << "Error opening the file: " << fileName << std::endl;
+    }
+    */
+    //END OF PRINT
 
     vector<Chapter> chapters = SplitIntoChapters(wordList);
 
