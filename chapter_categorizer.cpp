@@ -1,4 +1,7 @@
 #include "chapter_categorizer.h"
+//#include "doctest.h"
+//#define DOCTEST_CONFIG_IMPLEMENT
+
 
 using namespace std;
 
@@ -79,13 +82,12 @@ auto CleanseWords = [](const vector<string> &inputWords) -> vector<string> {
     return cleansedWords;
 };
 
-auto FilterWords = [](const vector<string> &mainText, const vector<string> &filterList1, const vector<string> &filterList2) -> vector<string> {
+auto FilterWords = [](const vector<string> &mainText, const vector<string> &filterList) -> vector<string> {
     vector<string> filteredWords;
-    set<string> filterSet1(filterList1.begin(), filterList1.end());
-    set<string> filterSet2(filterList2.begin(), filterList2.end());
+    set<string> filterSet(filterList.begin(), filterList.end());
 
     copy_if(mainText.begin(), mainText.end(), back_inserter(filteredWords), [&](const string &word) {
-        return filterSet1.find(word) != filterSet1.end() || filterSet2.find(word) != filterSet2.end();
+        return filterSet.find(word) != filterSet.end();
     });
 
     return filteredWords;
@@ -93,10 +95,6 @@ auto FilterWords = [](const vector<string> &mainText, const vector<string> &filt
 
 auto MapFunction = [](const string &word) {
         return make_pair(word, 1);
-    };
-
-auto ReduceFunction = [](int accumulator, const pair<string, int> &wordPair) {
-        return accumulator + wordPair.second;
     };
 
 auto CountWordOccurrences = [](const vector<string> &wordList) -> map<string, int> {
@@ -167,28 +165,41 @@ auto SplitIntoChapters = [](const std::vector<std::string>& bookContent) -> std:
     return chapters;
 };
 
+auto CalcSum = [] (map<string, double> terms){
+    vector<double> values;
+    transform(terms.begin(), terms.end(), std::back_inserter(values),
+                   [](const auto& pair) { return pair.second; });
+
+    // Use std::accumulate to calculate the sum
+    
+    return accumulate(values.begin(), values.end(), 0.0);
+};
+
 // Function to process a single chapter
-string ProcessChapter(const Chapter& chapter, const vector<string>& peaceList, const vector<string>& warList) {
+auto  ProcessChapter = [](const Chapter& chapter, const vector<string>& peaceList, const vector<string>& warList) ->string{
     vector<string> tokenizedWords = TokenizeString(chapter.content);
     vector<string> cleansedWords = CleanseWords(tokenizedWords);
-    vector<string> filteredWords = FilterWords(cleansedWords, peaceList, warList);
+    vector<string> filteredWordsWar = FilterWords(cleansedWords, warList);
+    vector<string> filteredWordsPeace = FilterWords(cleansedWords, peaceList);
 
-    map<string, int> wordOccurrences = CountWordOccurrences(filteredWords);
-    map<string, double> termDensity = CalculateTermDensity(filteredWords, wordOccurrences);
+    map<string, int> occurrencesWar = CountWordOccurrences(filteredWordsWar);
+    map<string, int> occurrencesPeace = CountWordOccurrences(filteredWordsPeace);
 
-    size_t totalChapterWordCount = chapter.content.size();
-    double warDensity = (totalChapterWordCount > 0) ? termDensity["war"] : 0.0;
-    double peaceDensity = (totalChapterWordCount > 0) ? termDensity["peace"] : 0.0;
+    map<string, double> termDensityWar = CalculateTermDensity(cleansedWords, occurrencesWar);
+    map<string, double> termDensityPeace = CalculateTermDensity(cleansedWords, occurrencesPeace);
+    
+    double densityWar = CalcSum(termDensityWar);
+    double densityPeace = CalcSum(termDensityPeace);
 
-    return (warDensity > peaceDensity) ? "War-related" : "Peace-related";
-}
+    return (densityWar > densityPeace) ? "war-related" : "peace-related";
+};
 
 // Function to print chapter categories
-void PrintChapterCategories(const vector<Chapter>& chapters, const vector<string>& chapterCategories) {
+auto PrintChapterCategories = [](const vector<Chapter>& chapters, const vector<string>& chapterCategories) {
     for (size_t i = 0; i < chapters.size(); ++i) {
         cout << "Chapter " << chapters[i].number << ": " << chapterCategories[i] << endl;
     }
-}
+};
 
 
 int main() {
@@ -196,28 +207,6 @@ int main() {
     vector<string> peaceList = ReadFile(peace_terms);
     vector<string> warList = ReadFile(war_terms);
     
-    //PRINT STUFF
-    /*
-    vector<string> tokenizedWords = TokenizeStringNoRegex(wordList);
-    std::string fileName = "Testfile3.txt";
-
-    std::ofstream outputFile(fileName);
-    if (outputFile.is_open()) {
-        // Iterate through the vector and write each string to the file
-        for (const std::string& str : tokenizedWords) {
-            outputFile << str << std::endl;
-        }
-
-        // Close the file stream
-        outputFile.close();
-
-        std::cout << "Vector of strings has been written to " << fileName << std::endl;
-    } else {
-        std::cerr << "Error opening the file: " << fileName << std::endl;
-    }
-    */
-    //END OF PRINT
-
     vector<Chapter> chapters = SplitIntoChapters(wordList);
 
     vector<string> chapterCategories(chapters.size());
@@ -228,3 +217,16 @@ int main() {
 
     return 0;
 }
+
+/*
+TEST_CASE("Tokenizing test"){
+    // Test input with various delimiters
+    std::string input = "This is, \"a\" test! With some punctuation.";
+    std::vector<std::string> expected = {"this", "is", "a", "test", "with", "some", "punctuation"};
+
+    // Call the tokenize function
+    std::vector<std::string> result = expected;
+
+    // Check if the result matches the expected output
+    CHECK(result == expected);
+}*/
