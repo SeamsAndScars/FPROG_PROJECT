@@ -1,7 +1,4 @@
 #include "chapter_categorizer.h"
-//#include "doctest.h"
-//#define DOCTEST_CONFIG_IMPLEMENT
-
 
 using namespace std;
 
@@ -201,8 +198,20 @@ auto PrintChapterCategories = [](const vector<Chapter>& chapters, const vector<s
     }
 };
 
+TEST_CASE("tokenize input"){
+    // ARRANGE
+    std::string input = "Test string containing !some!? kind of punctuation.\"and SP3CI4L characters!";
+    std::vector<std::string> expected = {"Test", "string", "containing", "some", "kind", "of", "punctuation", "and", "SP3CI4L", "characters"};
+
+    // ACT
+    std::vector<std::string> result = tokenize(input);
+
+    // ASSERT
+    CHECK(result == expected);
+}
 
 int main() {
+    
     vector<string> wordList = ReadFile(book);
     vector<string> peaceList = ReadFile(peace_terms);
     vector<string> warList = ReadFile(war_terms);
@@ -215,18 +224,9 @@ int main() {
 
     PrintChapterCategories(chapters, chapterCategories);
 
+    //RUN TESTCASES
+    doctest::Context().run();
     return 0;
 }
 
-/*
-TEST_CASE("Tokenizing test"){
-    // Test input with various delimiters
-    std::string input = "This is, \"a\" test! With some punctuation.";
-    std::vector<std::string> expected = {"this", "is", "a", "test", "with", "some", "punctuation"};
 
-    // Call the tokenize function
-    std::vector<std::string> result = expected;
-
-    // Check if the result matches the expected output
-    CHECK(result == expected);
-}*/
