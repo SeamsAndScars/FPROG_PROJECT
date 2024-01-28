@@ -200,15 +200,15 @@ int main() {
 
 TEST_CASE("tokenize input"){
     // ARRANGE
-    std::string input = "Test string containing !some!? kind of punctuation.\"and special characters!";
-    std::vector<std::string> expected = {"test", "string", "containing", "some", "kind", "of", "punctuation", "and", "special", "characters"};
+    string input = "Test string containing !some!? kind of punctuation.\"and special characters!";
+    vector<string> expected = {"test", "string", "containing", "some", "kind", "of", "punctuation", "and", "special", "characters"};
 
-    std::string input2 = "_-A/!1²2\"3§³4$5%6&7/{8[(9)]0=}?ß\\´`#'*+~ÄÖÜ;äöüµ:.><|^°END";
-    std::vector<std::string> expected2 = {"a", "end"};
+    string input2 = "_-A/!1²2\"3§³4$5%6&7/{8[(9)]0=}?ß\\´`#'*+~ÄÖÜ;äöüµ:.><|^°END";
+    vector<string> expected2 = {"a", "end"};
 
     // ACT
-    std::vector<std::string> result = tokenize(input);
-    std::vector<std::string> result2 = tokenize(input2);
+    vector<string> result = tokenize(input);
+    vector<string> result2 = tokenize(input2);
 
     // ASSERT
     CHECK_EQ(result , expected);
@@ -287,5 +287,19 @@ TEST_CASE("Calculate Term Density Test") {
 
         CHECK(std::abs(pair.second - it->second) < 1e-4);
     }
-    //CHECK_EQ(result, expected);
+}
+
+TEST_CASE("CalcSum Test") {
+    // ARRANGE
+    map<string, double> input = {{"war", 8.5}, {"weapon", 10.2}, {"grace", 3}, {"famine", 4}, {"hopelessness", 3.7}};
+    double expected = 29.4;
+    
+    map<string, double> empty_map = {};
+    // ACT
+    auto result = CalcSum(input);
+    auto result2 = CalcSum(empty_map);
+    
+    // ASSERT
+    CHECK_EQ(result, expected);
+    CHECK(result2 == 0);
 }
