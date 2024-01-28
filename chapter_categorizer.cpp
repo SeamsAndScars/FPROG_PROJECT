@@ -211,7 +211,7 @@ TEST_CASE("tokenize input"){
 }
 
 int main() {
-    
+
     vector<string> wordList = ReadFile(book);
     vector<string> peaceList = ReadFile(peace_terms);
     vector<string> warList = ReadFile(war_terms);
@@ -226,6 +226,8 @@ int main() {
 
     //RUN TESTCASES
     doctest::Context().run();
+
+   
     return 0;
 }
 
