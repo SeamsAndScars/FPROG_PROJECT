@@ -13,4 +13,5 @@ This C++ program analyzes the content of chapters in a book and categorizes them
 - chmod +x run.sh (maybe necessary!)
 - ./run.sh
 
-
+### Additional Information
+Ensure your text file line endings are set to LF (Line Feed) before running this program on a Unix machine. Adjust the line endings if needed.

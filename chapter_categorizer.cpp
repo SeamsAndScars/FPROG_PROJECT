@@ -20,7 +20,6 @@ auto ReadFile = [](string filename) -> vector<string> {
     return fileData;
 };
 
-
 auto tokenize = [](const string& input) -> vector<string> {
     vector<string> tokens;
     
@@ -33,9 +32,9 @@ auto tokenize = [](const string& input) -> vector<string> {
     vector<char> currentToken;
 
     for (char ch : input) {
-        if (isalnum(ch)) {
+        if (isalpha(ch)) {
             // Add alphanumeric character to the current token
-            currentToken.push_back(ch);
+            currentToken.push_back(tolower(ch));
         } else {
             // Non-alphanumeric character found, process the current token if not empty
             processToken(currentToken);
@@ -50,33 +49,15 @@ auto tokenize = [](const string& input) -> vector<string> {
 };
 
 auto TokenizeString = [](const std::vector<std::string>& inputStrings) -> std::vector<std::string> {
-    std::vector<std::string> tokenizedWords;
+    vector<string> tokenizedWords;
 
-    for (const auto& str : inputStrings) {
-        std::vector<std::string> tokens = tokenize(str);
-        for (const auto& token : tokens) {
+    for_each(inputStrings.begin(), inputStrings.end(), [&tokenizedWords](const auto& str) {
+        vector<string> tokens = tokenize(str);
+        for_each(tokens.begin(), tokens.end(), [&tokenizedWords](const auto& token) {
             tokenizedWords.push_back(token);
-        }
-    }
+        });
+    });
     return tokenizedWords;
-};
-
-auto CleanseWords = [](const vector<string> &inputWords) -> vector<string> {
-    vector<string> cleansedWords;
-
-    for (const auto &word: inputWords) {
-        string cleansedWord;
-        for (char c: word) {
-            if (isalpha(c)) { //only alphabetical chars allowed!
-                cleansedWord += tolower(c); // Convert to lowercase
-            }
-        }
-        if (!cleansedWord.empty()) {
-            cleansedWords.push_back(cleansedWord);
-        }
-    }
-
-    return cleansedWords;
 };
 
 auto FilterWords = [](const vector<string> &mainText, const vector<string> &filterList) -> vector<string> {
@@ -91,8 +72,8 @@ auto FilterWords = [](const vector<string> &mainText, const vector<string> &filt
 };
 
 auto MapFunction = [](const string &word) {
-        return make_pair(word, 1);
-    };
+    return make_pair(word, 1);
+};
 
 auto CountWordOccurrences = [](const vector<string> &wordList) -> map<string, int> {
     map<string, int> wordCount;
@@ -175,15 +156,14 @@ auto CalcSum = [] (map<string, double> terms){
 // Function to process a single chapter
 auto  ProcessChapter = [](const Chapter& chapter, const vector<string>& peaceList, const vector<string>& warList) ->string{
     vector<string> tokenizedWords = TokenizeString(chapter.content);
-    vector<string> cleansedWords = CleanseWords(tokenizedWords);
-    vector<string> filteredWordsWar = FilterWords(cleansedWords, warList);
-    vector<string> filteredWordsPeace = FilterWords(cleansedWords, peaceList);
+    vector<string> filteredWordsWar = FilterWords(tokenizedWords, warList);
+    vector<string> filteredWordsPeace = FilterWords(tokenizedWords, peaceList);
 
     map<string, int> occurrencesWar = CountWordOccurrences(filteredWordsWar);
     map<string, int> occurrencesPeace = CountWordOccurrences(filteredWordsPeace);
 
-    map<string, double> termDensityWar = CalculateTermDensity(cleansedWords, occurrencesWar);
-    map<string, double> termDensityPeace = CalculateTermDensity(cleansedWords, occurrencesPeace);
+    map<string, double> termDensityWar = CalculateTermDensity(tokenizedWords, occurrencesWar);
+    map<string, double> termDensityPeace = CalculateTermDensity(tokenizedWords, occurrencesPeace);
     
     double densityWar = CalcSum(termDensityWar);
     double densityPeace = CalcSum(termDensityPeace);
@@ -198,20 +178,8 @@ auto PrintChapterCategories = [](const vector<Chapter>& chapters, const vector<s
     }
 };
 
-TEST_CASE("tokenize input"){
-    // ARRANGE
-    std::string input = "Test string containing !some!? kind of punctuation.\"and SP3CI4L characters!";
-    std::vector<std::string> expected = {"Test", "string", "containing", "some", "kind", "of", "punctuation", "and", "SP3CI4L", "characters"};
-
-    // ACT
-    std::vector<std::string> result = tokenize(input);
-
-    // ASSERT
-    CHECK(result == expected);
-}
 
 int main() {
-
     vector<string> wordList = ReadFile(book);
     vector<string> peaceList = ReadFile(peace_terms);
     vector<string> warList = ReadFile(war_terms);
@@ -227,8 +195,50 @@ int main() {
     //RUN TESTCASES
     doctest::Context().run();
 
-   
     return 0;
 }
 
+
+TEST_CASE("tokenize input"){
+    // ARRANGE
+    std::string input = "Test string containing !some!? kind of punctuation.\"and special characters!";
+    std::vector<std::string> expected = {"test", "string", "containing", "some", "kind", "of", "punctuation", "and", "special", "characters"};
+
+    
+    std::string input2 = "_-A/!1²2\"3§³4$5%6&7/{8[(9)]0=}?ß\\´`#'*+~ÄÖÜ;äöüµ:.><|^°END";
+    std::vector<std::string> expected2 = {"a", "end"};
+
+
+    // ACT
+    std::vector<std::string> result = tokenize(input);
+    std::vector<std::string> result2 = tokenize(input2);
+
+    // ASSERT
+    CHECK_EQ(result , expected);
+    CHECK_EQ(result2 , expected2);
+}
+
+TEST_CASE("ReadFile Non-Existent File Test") {
+    // ARRANGE
+    const std::string nonExistentFile = "non_existent_file.txt";
+
+    // ACT
+    auto result = ReadFile(nonExistentFile);
+
+    //ASSERT 
+    CHECK(result.empty());
+}
+
+TEST_CASE("ReadFile Working File") {
+    //ARRANGE
+    string ExistentFile = "test_ReadFile.txt";
+    vector<string> expected = {"This is some content used for a test case. Please do not delete or modify this file!"};
+
+    // ACT
+    auto result = ReadFile(ExistentFile);
+
+    // ASSERT
+    CHECK(result.size() == expected.size());
+    CHECK_EQ(result, expected);
+}
 
