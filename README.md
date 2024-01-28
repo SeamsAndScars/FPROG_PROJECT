@@ -10,7 +10,7 @@ This C++ program analyzes the content of chapters in a book and categorizes them
 #Run script
 
 **This script first compiles and runs the project (including tests), then it saves the output in a .txt file and compares the output of the the already provided output with our generated output!**
-- chmod +x run.sh (maybe necessariy!)
+- chmod +x run.sh (maybe necessary!)
 - ./run.sh
 
 
