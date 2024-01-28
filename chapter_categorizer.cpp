@@ -198,16 +198,13 @@ int main() {
     return 0;
 }
 
-
 TEST_CASE("tokenize input"){
     // ARRANGE
     std::string input = "Test string containing !some!? kind of punctuation.\"and special characters!";
     std::vector<std::string> expected = {"test", "string", "containing", "some", "kind", "of", "punctuation", "and", "special", "characters"};
 
-    
     std::string input2 = "_-A/!1²2\"3§³4$5%6&7/{8[(9)]0=}?ß\\´`#'*+~ÄÖÜ;äöüµ:.><|^°END";
     std::vector<std::string> expected2 = {"a", "end"};
-
 
     // ACT
     std::vector<std::string> result = tokenize(input);
@@ -242,3 +239,53 @@ TEST_CASE("ReadFile Working File") {
     CHECK_EQ(result, expected);
 }
 
+TEST_CASE("Filter Words Test") {
+    // ARRANGE
+    vector<string> mainText = {"war", "weapon", "grace", "famine", "hope", "help", "thirst", "poverty", "love", "courage", "compassion", "struggle", "hopelessness"};
+    vector<string> filterList = {"hope", "poverty", "grace", "hope"};
+    vector<string> expected = {"grace", "hope", "poverty"};
+
+    vector<string> filterList2 = {"ananas", "grape", "car", "window"};
+    vector<string> emptyVector = {};
+
+    // ACT
+    auto result = FilterWords(mainText, filterList);
+    auto result2 = FilterWords(mainText, filterList2);
+    auto result3 = FilterWords(mainText, emptyVector);
+
+    // ASSERT
+    CHECK_EQ(result, expected);
+    CHECK_EQ(result2,emptyVector);
+    CHECK_EQ(result3, emptyVector);
+}
+
+TEST_CASE("Count Word Occurrences Test") {
+    // ARRANGE
+    vector<string> wordList = {"war", "weapon", "grace", "famine", "weapon", "famine", "weapon", "famine", "hopelessness","grace" ,"hopelessness", "weapon"};
+    map<string, int> expected = {{"war", 1}, {"weapon", 4}, {"grace", 2}, {"famine", 3}, {"hopelessness", 2}};
+
+    // ACT
+    auto result = CountWordOccurrences(wordList);
+
+    // ASSERT
+    CHECK_EQ(result, expected);
+}
+
+TEST_CASE("Calculate Term Density Test") {
+    // ARRANGE
+    vector<string> chapterContent = {"war", "weapon", "grace", "famine", "weapon", "famine", "weapon", "famine", "hopelessness","grace" ,"hopelessness", "weapon"};
+    map<string, int> wordOccurrences = {{"war", 1}, {"weapon", 4}, {"grace", 2}, {"famine", 3}, {"hopelessness", 2}};
+    map<string, double> expected = {{"war", 8.33333}, {"weapon", 33.33333}, {"grace", 16.6667}, {"famine", 25}, {"hopelessness", 16.6667}};
+
+    // ACT
+    auto result = CalculateTermDensity(chapterContent, wordOccurrences);
+
+    
+    // ASSERT
+    for (const auto& pair : result) {
+        auto it = expected.find(pair.first);
+
+        CHECK(std::abs(pair.second - it->second) < 1e-4);
+    }
+    //CHECK_EQ(result, expected);
+}
